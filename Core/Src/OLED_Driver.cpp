@@ -466,6 +466,55 @@ void OLED_Driver::Draw_FastVLine(int16_t x, int16_t y, int16_t length,uint16_t c
     while(y0+length>=y);
 }
   
+void OLED_Driver::Display_hbmp(int x,int y,int w,int h,const u8 *ch,uint16_t color)
+{
+	u16 i,j;
+	u16 red,green,blue;
+	u16 red1,green1,blue1;
+	u16 Factor;
+//	color = 0xFFFF;
+	red = color>>11;
+	green = (color&0x7E0)>>5;
+	blue = color&0x1F;
+	for(j=0;j<h;j++)
+		for(i=0;i<(w+1)/2;i++)
+		{
+			Factor = (ch[j*((w+1)/2)+i]&0xF0)>>4;
+			if(red>=15)
+				red1 = red-0xF+Factor;
+			else
+				red1 = Factor;
+			if(green>=30)
+				green1=green-30+Factor*2;
+			else
+				green1 = Factor*2;
+			if(blue>=15)
+				blue1=blue-15+Factor;
+			else
+				blue1=Factor;
+			
+			if(Factor)
+				Draw_Pixel(x+i*2+0,y+j,red1<<11|(green1<<5)|(blue1));
+			
+			Factor = (ch[j*((w+1)/2)+i]&0xF);
+			if(red>=15)
+				red1 = red-0xF+Factor;
+			else
+				red1 = Factor;
+			if(green>=30)
+				green1=green-30+Factor*2;
+			else
+				green1 = Factor*2;
+			if(blue>=15)
+				blue1=blue-15+Factor;
+			else
+				blue1=Factor;
+			
+			if(Factor)
+				Draw_Pixel(x+i*2+1,y+j,red1<<11|(green1<<5)|(blue1));
+		}
+}	
+
 
 #ifdef __cplusplus
 }

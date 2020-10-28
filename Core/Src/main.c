@@ -17,11 +17,11 @@
   ******************************************************************************
   */
 /* USER CODE END Header */
-
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -133,7 +133,7 @@ void FFT_Pro(void)
 	{
 		//这里因为单片机的ADC只能测正的电压 所以需要前级加直流偏执
 		//加入直流偏执后 1.25V 对应AD值为3103
-		lBufInArray[i] = ((signed short)(adc_buf[i])-1551) << 16;		
+		lBufInArray[i] = ((signed short)(adc_buf[i])-1551) << 18;		
 	}
 	//256点FFT变换
 	cr4_fft_256_stm32(lBufOutArray, lBufInArray, NPT);
@@ -200,6 +200,58 @@ void getdata(void)
 }
 
 
+u8 key1UpFlag = False;
+u8 key1_fall_flag = False;
+u8 short_key1_flag = False;
+u8 key1_long_down = False;
+u8 long_key1_flag = False;
+int key1_holdon_ms = 0;
+int key1upCnt = 0;
+
+u8 key2UpFlag = False;
+u8 key2_fall_flag = False;
+u8 short_key2_flag = False;
+u8 key2_long_down = False;
+u8 long_key2_flag = False;
+int key2_holdon_ms = 0;
+int key2upCnt = 0;
+
+void KeyProcess(void)
+{
+	if(short_key1_flag)
+	{
+		short_key1_flag=0;
+		save.theme++;			
+		if(save.theme>6)
+			save.theme=1;
+		
+		oled.Display_hbmp(64-81/2,48-26/2,81,26,themetop[save.theme-1],0xFFFF);
+		oled.Refrash_Screen();
+		savedata();
+		oled.Clear_Screen();
+	}
+	else if(key1_long_down)
+	{
+		key1_long_down=0;
+	}
+	if(short_key2_flag)
+	{
+		short_key2_flag=0;
+		save.animotion++;			
+		if(save.animotion>6)
+			save.animotion=0;
+		
+		oled.Display_hbmp(64-81/2,48-26/2,81,26,animationtop[save.animotion],0xFFFF);
+		oled.Refrash_Screen();
+		savedata();
+		oled.Clear_Screen();
+	}
+	else if(key2_long_down)
+	{
+		key2_long_down=0;
+	}
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -212,7 +264,6 @@ int main(void)
 
 	static u16 TimeRun = 0;
   /* USER CODE END 1 */
-  
 
   /* MCU Configuration--------------------------------------------------------*/
 
@@ -238,13 +289,21 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_TIM5_Init();
+  MX_RTC_Init();
+  MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
 	getdata();
 	HAL_TIM_Base_Start_IT(&htim4);
+	HAL_TIM_Base_Start_IT(&htim5);
+	HAL_TIM_Base_Start_IT(&htim9);
 	printf("Sys OK!\r\n");
   oled.Device_Init();
 	motion.OLED_AllMotion_Init();
 	FFT_Start();
+	HAL_RTC_MspInit(&hrtc);
+  RTC_Set_WakeUp(RTC_WAKEUPCLOCK_CK_SPRE_16BITS,0); //配置WAKE UP中断,1秒钟中断一次
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -278,15 +337,18 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
-  /** Configure the main internal regulator output voltage 
+  /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE2);
-  /** Initializes the CPU, AHB and APB busses clocks 
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -297,7 +359,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  /** Initializes the CPU, AHB and APB busses clocks 
+  /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
@@ -310,6 +372,12 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
+  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -319,8 +387,9 @@ void MUSIC_Mode(void)
 {
 	int i;
   static uint8_t OTheme = 0;
-	if(1)
+	if(Flag_Refrash)
 	{
+		Flag_Refrash = False;
 		oled.Clear_Screen();
 		motion.OLED_CustormMotion(save.animotion);
 		if(adc_dma_ok)
@@ -332,6 +401,7 @@ void MUSIC_Mode(void)
 			Device_Msg.leftvol=Device_Msg.fft[1];
 			FFT_Start();
 		}
+		KeyProcess();
 		if(OTheme!=save.theme)
 		{
 			OTheme=save.theme;
@@ -342,6 +412,8 @@ void MUSIC_Mode(void)
 				flow_pot[i] = 128;
 			}
 		}
+		
+		
 		switch(save.theme)
 		{
 			case 1:fft.Display_Style1();break;
@@ -357,26 +429,10 @@ void MUSIC_Mode(void)
 	HAL_Delay(10);
 }
 
-u8 key1UpFlag = False;
-u8 key1_fall_flag = False;
-u8 short_key1_flag = False;
-u8 key1_long_down = False;
-u8 long_key1_flag = False;
-int key1_holdon_ms = 0;
-int key1upCnt = 0;
-
-u8 key2UpFlag = False;
-u8 key2_fall_flag = False;
-u8 short_key2_flag = False;
-u8 key2_long_down = False;
-u8 long_key2_flag = False;
-int key2_holdon_ms = 0;
-int key2upCnt = 0;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	static u16 SleepCount = 0;
-	static u16 ContinueCount = 0;
-	static u16 TimeRun = 0;
+	static RTC_TimeTypeDef RTC_TimeStruct;
+  static RTC_DateTypeDef RTC_DateStruct;
 	if (htim->Instance == htim4.Instance)
 	{
 		if(key1_fall_flag==1)//发生按键按下事件
@@ -482,35 +538,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			key2UpFlag = False;
 		}
 		
-		if(short_key1_flag)
-		{
-			short_key1_flag=0;
-			save.theme++;			
-			if(save.theme>6)
-				save.theme=1;
-			savedata();
-		}
-		else if(key1_long_down)
-		{
-			key1_long_down=0;
-		}
-		if(short_key2_flag)
-		{
-			short_key2_flag=0;
-			save.animotion++;			
-			if(save.animotion>5)
-				save.animotion=1;
-			savedata();
-		}
-		else if(key2_long_down)
-		{
-			key2_long_down=0;
-		}
 	}
-//	if (htim->Instance == htim8.Instance)
-//	{
-//		Flag_Refrash = True;
-//	}
+	if (htim->Instance == htim5.Instance)
+	{
+		Flag_Refrash = True;
+	}
+	if (htim->Instance == htim9.Instance)
+	{
+		HAL_RTC_GetTime(&RTC_Handler,&RTC_TimeStruct,RTC_FORMAT_BIN);
+		printf("Time:%02d:%02d:%02d\r\n",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds); 
+		HAL_RTC_GetDate(&RTC_Handler,&RTC_DateStruct,RTC_FORMAT_BIN);
+		printf("Date:20%02d-%02d-%02d\r\n",RTC_DateStruct.Year,RTC_DateStruct.Month,RTC_DateStruct.Date); 
+		printf("Week:%d\r\n",RTC_DateStruct.WeekDay); 
+	}
 //	if (htim->Instance == htim6.Instance)
 //	{
 //		if(ContinueCount++>20)
@@ -584,7 +624,7 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

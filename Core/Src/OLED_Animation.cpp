@@ -509,7 +509,7 @@ OLED_STATUS OLED_Animation::OLED_Triangle(u8 Index){
 void OLED_Animation::Motion_TriangleInit(void){
 	
 	int i;
-	for(i=0;i<TRIANGLEMAX;i++)
+	for(i=0;i<FULLTRIANGLEMAX;i++)
 	{
 		mttriangle[i].r=rand()%10+5;
 			__ASM("NOP");
@@ -571,15 +571,62 @@ void OLED_Animation::Motion_Triangle(void){
 			{
 				TriangleNum++;
 			}
+			else if(TriangleNum>TRIANGLEMAX )
+				TriangleNum=TRIANGLEMAX;
 		}
 	}
 	
 	
 	for(i=0;i<TriangleNum;i++)
-	{	
+	{				
 		oled.Draw_Triangle(mttriangle[i].x+(mttriangle[i].r*cos(mttriangle[i].angle*PI/180)),mttriangle[i].y+(mttriangle[i].r*sin(mttriangle[i].angle*PI/180)),mttriangle[i].x+(mttriangle[i].r*cos((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].y+(mttriangle[i].r*sin((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].x+(mttriangle[i].r*cos((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),mttriangle[i].y+(mttriangle[i].r*sin((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),mttriangle[i].color);
 		if(mttriangle[i].r>5)
 			oled.Draw_Triangle(mttriangle[i].x+((mttriangle[i].r-5)*cos(mttriangle[i].angle*PI/180)),mttriangle[i].y+((mttriangle[i].r-5)*sin(mttriangle[i].angle*PI/180)),mttriangle[i].x+((mttriangle[i].r-5)*cos((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].y+((mttriangle[i].r-5)*sin((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].x+((mttriangle[i].r-5)*cos((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),mttriangle[i].y+((mttriangle[i].r-5)*sin((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),color_min);
+		}
+}
+
+
+void OLED_Animation::Motion_TriangleF(void){
+	
+	int i;
+	for(i=0;i<TriangleNum;i++)
+	{
+		if(OLED_Triangle(i) == OLED_IDLE)
+		{
+			mttriangle[i].r=rand()%10+5;
+				__ASM("NOP");
+			mttriangle[i].color = oled.RandomColor();		
+				__ASM("NOP");										
+			mttriangle[i].spd = float(rand()%20+10)/15;
+				__ASM("NOP");
+			mttriangle[i].angle = rand()%60;	//ÔËÐÐ½Ç¶È30 150 270
+			
+			mttriangle[i].x = rand()%SSD1351_WIDTH;	
+			mttriangle[i].y = rand()%SSD1351_HEIGHT;	
+			
+			mttriangle[i].dirx = rand()%20*0.1f-1.0f;
+			if(mttriangle[i].dirx<0.2&&mttriangle[i].dirx>-0.2)
+				mttriangle[i].dirx = 0.5;
+			mttriangle[i].diry = rand()%20*0.1f-1.0f;
+			if(mttriangle[i].diry<0.2&&mttriangle[i].diry>-0.2)
+				mttriangle[i].diry = 0.5;
+			mttriangle[i].delt1 = rand()%60+90;
+			mttriangle[i].delt2 = rand()%60+210;
+			
+			if(TriangleNum<FULLTRIANGLEMAX )
+			{
+				TriangleNum++;
+			}
+		}
+	}
+	
+	
+	for(i=0;i<TriangleNum;i++)
+	{				
+		oled.Fill_Triangle(mttriangle[i].x+((mttriangle[i].r)*cos(mttriangle[i].angle*PI/180)),mttriangle[i].y+((mttriangle[i].r)*sin(mttriangle[i].angle*PI/180)),mttriangle[i].x+((mttriangle[i].r)*cos((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].y+((mttriangle[i].r)*sin((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].x+((mttriangle[i].r)*cos((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),mttriangle[i].y+((mttriangle[i].r)*sin((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),mttriangle[i].color);
+
+		oled.Draw_Triangle(mttriangle[i].x+((mttriangle[i].r+1)*cos(mttriangle[i].angle*PI/180)),mttriangle[i].y+((mttriangle[i].r+1)*sin(mttriangle[i].angle*PI/180)),mttriangle[i].x+((mttriangle[i].r+1)*cos((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].y+((mttriangle[i].r+1)*sin((mttriangle[i].angle+mttriangle[i].delt1)*PI/180)),mttriangle[i].x+((mttriangle[i].r+1)*cos((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),mttriangle[i].y+((mttriangle[i].r+1)*sin((mttriangle[i].angle+mttriangle[i].delt2)*PI/180)),color_half);
+//		if(mttriangle[i].r>5)
 	}
 }
 
@@ -603,6 +650,7 @@ void OLED_Animation::OLED_CustormMotion(u8 Channel)
 	case 3:Motion_Circle();break;
 	case 4:Motion_Planet();break;
 	case 5:Motion_Triangle();break;
+	case 6:Motion_TriangleF();break;
 	}
 }
 

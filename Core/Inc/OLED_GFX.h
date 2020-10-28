@@ -45,7 +45,9 @@ class OLED_GFX : public virtual OLED_Driver {
     void Draw_RoundRect(int16_t x, int16_t y, int16_t w, int16_t h, int16_t r,uint16_t color);
     void Draw_Triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
     void Draw_Triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2,uint16_t color);
-    
+    void Fill_Triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
+		void Fill_Triangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
+
     void print_String(uint8_t x, uint8_t y, const uint8_t *text, FONT_SIZE size);
     void Display_String_5x8(uint8_t x, uint8_t y, const uint8_t *text);
     void Display_String_8x16(uint8_t x, uint8_t y, const uint8_t *text);

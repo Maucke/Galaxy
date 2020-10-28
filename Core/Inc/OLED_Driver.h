@@ -136,6 +136,7 @@ extern "C" {
       void Draw_FastVLine(int16_t x, int16_t y, int16_t length,uint16_t color);
       void Write_Command(uint8_t data1);
 			
+			void Display_hbmp(int x,int y,int w,int h,const u8 *ch,uint16_t color);
 			
 			void Set_DampColor(uint16_t color);
 			void Set_Wheel(uint16_t WheelPos);

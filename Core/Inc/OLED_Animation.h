@@ -13,6 +13,7 @@
 #define DEFLINEMAX 30
 #define PLANETMAX 5
 #define TRIANGLEMAX 8
+#define FULLTRIANGLEMAX 8
 
 typedef enum
 {
@@ -43,6 +44,7 @@ extern "C" {
 			void Motion_Planet(void);
 			void Motion_TriangleInit(void);
 			void Motion_Triangle(void);
+			void Motion_TriangleF(void);
 			void OLED_AllMotion_Init(void);
 			void OLED_CustormMotion(u8 Channel);
 			void OLED_AllMotion(u8 Type,u16 Speed);
