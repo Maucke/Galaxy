@@ -94,7 +94,7 @@ typedef double         fp64;                    /* double precision floating poi
 
 extern uint8_t color_byte[2];
 extern uint8_t color_fill_byte[2];
-
+extern uint8_t dmasendflag;
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -142,6 +142,9 @@ extern "C" {
 			void Set_Wheel(uint16_t WheelPos);
 			void Set_Wheelf(uint16_t WheelPos);
 			u16 WheelP(u16 WheelPos);
+			
+			void OLED_HFAny(int x,int y,int w,int h,u8 Num,const unsigned char *ch,uint16_t color);
+			void OLED_SHFAny(int x,int y,char *ch,int w,uint16_t color);
     private:  
       uint8_t Float2U8(float Input);
       void RAM_Address(void);

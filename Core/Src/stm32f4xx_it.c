@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "OLED_Driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -307,11 +308,16 @@ void DMA2_Stream0_IRQHandler(void)
 void DMA2_Stream3_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA2_Stream3_IRQn 0 */
-
+	if(__HAL_DMA_GET_FLAG(&hdma_spi1_tx,DMA_FLAG_TCIF3_7))
+	{
+		OLED_DC(GPIO_PIN_RESET);
+		OLED_CS(GPIO_PIN_SET);
+		dmasendflag = 1;
+	}
   /* USER CODE END DMA2_Stream3_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_spi1_tx);
   /* USER CODE BEGIN DMA2_Stream3_IRQn 1 */
-
+	
   /* USER CODE END DMA2_Stream3_IRQn 1 */
 }
 

@@ -197,6 +197,7 @@ void FFT_Pro(void);
 #define KEY_2_EXTI_IRQn EXTI4_IRQn
 /* USER CODE BEGIN Private defines */
 
+#define DMA_SPI 0
 #define INTERFACE_4WIRE_SPI 1
 #define INTERFACE_3WIRE_SPI !(INTERFACE_4WIRE_SPI)
 

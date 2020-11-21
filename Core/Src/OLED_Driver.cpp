@@ -210,17 +210,25 @@ void OLED_Driver::Write_Data(uint8_t dat) {
   
 }
 
+uint8_t dmasendflag = 1;
+
 void OLED_Driver::Write_Data(uint8_t* dat_p, long length) {
-  
+#if DMA_SPI
+  while(!dmasendflag);
+#endif
   OLED_CS(GPIO_PIN_RESET);
-  
 #if INTERFACE_4WIRE_SPI
   
   OLED_DC(GPIO_PIN_SET);
-  
+#if DMA_SPI
+  HAL_SPI_Transmit_DMA(&hspi1,dat_p,length);
+	dmasendflag = 0;
+#else
   while(HAL_SPI_Transmit(&hspi1,dat_p,length,0x10) != HAL_OK);
-  
+	
   OLED_DC(GPIO_PIN_RESET);
+  OLED_CS(GPIO_PIN_SET);
+#endif
   
 #elif INTERFACE_3WIRE_SPI
   
@@ -243,9 +251,9 @@ void OLED_Driver::Write_Data(uint8_t* dat_p, long length) {
       hwData <<= 1;
     }
   }
+  OLED_CS(GPIO_PIN_SET);
 #endif
   
-  OLED_CS(GPIO_PIN_SET);
   
 }
 
@@ -515,6 +523,74 @@ void OLED_Driver::Display_hbmp(int x,int y,int w,int h,const u8 *ch,uint16_t col
 		}
 }	
 
+void OLED_Driver::OLED_HFAny(int x,int y,int w,int h,u8 Num,const unsigned char *ch,uint16_t color)
+{
+	u16 i,j;
+	u16 red,green,blue;
+	u16 red1,green1,blue1;
+	u16 Factor;
+//	color = 0xFFFF;
+	red = color>>11;
+	green = (color&0x7E0)>>5;
+	blue = color&0x1F;
+	for(j=0;j<h;j++)
+		for(i=0;i<(w+1)/2;i++)
+		{
+			Factor = (ch[Num*h*((w+1)/2)+j*((w+1)/2)+i]&0xF0)>>4;
+			if(red>=15)
+				red1 = red-0xF+Factor;
+			else
+				red1 = Factor;
+			if(green>=30)
+				green1=green-30+Factor*2;
+			else
+				green1 = Factor*2;
+			if(blue>=15)
+				blue1=blue-15+Factor;
+			else
+				blue1=Factor;
+			
+			if(Factor)
+				Draw_Pixel(x+i*2+0,y+j,red1<<11|(green1<<5)|(blue1));
+			
+			Factor = (ch[Num*h*((w+1)/2)+j*((w+1)/2)+i]&0xF);
+			if(red>=15)
+				red1 = red-0xF+Factor;
+			else
+				red1 = Factor;
+			if(green>=30)
+				green1=green-30+Factor*2;
+			else
+				green1 = Factor*2;
+			if(blue>=15)
+				blue1=blue-15+Factor;
+			else
+				blue1=Factor;
+			
+			if(Factor)
+				Draw_Pixel(x+i*2+1,y+j,red1<<11|(green1<<5)|(blue1));
+		}
+}	
+extern const unsigned char GeForce_10x13[];
+extern const unsigned char GeForce_19x23[];
+extern const unsigned char GeForce_25x37[];
+void OLED_Driver::OLED_SHFAny(int x,int y,char *ch,int w,uint16_t color)
+{
+	u8 c=0,j=0;
+	while(ch[j]!='\0')
+	{
+		c=ch[j]-'0';
+		switch(w)
+		{
+			case 10:OLED_HFAny(x,y,10,13,c,GeForce_10x13,color);break;
+			case 19:OLED_HFAny(x,y,19,23,c,GeForce_19x23,color);break;
+			case 25:OLED_HFAny(x,y,25,37,c,GeForce_25x37,color);break;
+			default:OLED_HFAny(x,y,10,13,c,GeForce_10x13,color);break;
+		}
+		x+=w; 
+		j++;
+	}
+}
 
 #ifdef __cplusplus
 }

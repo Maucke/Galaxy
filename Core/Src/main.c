@@ -21,7 +21,6 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
-#include "rtc.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -148,12 +147,12 @@ void FFT_Pro(void)
 
 /* USER CODE BEGIN PV */
 int Count=0;
-int FPS=0;
 
 u8 Dataleng;
 char DataDis[20];
 char DataDisf[3];
 
+u8 showfpsflag = 0;
 //void CopyString(char *ch1,char *ch2)
 //{
 //	int i;
@@ -232,6 +231,7 @@ void KeyProcess(void)
 	}
 	else if(key1_long_down)
 	{
+		showfpsflag = 1-showfpsflag;
 		key1_long_down=0;
 	}
 	if(short_key2_flag)
@@ -251,7 +251,8 @@ void KeyProcess(void)
 		key2_long_down=0;
 	}
 }
-
+u16 fps = 0;
+char fpschar[20];
 /* USER CODE END 0 */
 
 /**
@@ -262,7 +263,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	static u16 TimeRun = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -290,7 +290,6 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM4_Init();
   MX_TIM5_Init();
-  MX_RTC_Init();
   MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
 	getdata();
@@ -301,8 +300,8 @@ int main(void)
   oled.Device_Init();
 	motion.OLED_AllMotion_Init();
 	FFT_Start();
-	HAL_RTC_MspInit(&hrtc);
-  RTC_Set_WakeUp(RTC_WAKEUPCLOCK_CK_SPRE_16BITS,0); //配置WAKE UP中断,1秒钟中断一次
+//	HAL_RTC_MspInit(&hrtc);
+//  RTC_Set_WakeUp(RTC_WAKEUPCLOCK_CK_SPRE_16BITS,0); //配置WAKE UP中断,1秒钟中断一次
 
   /* USER CODE END 2 */
 
@@ -313,15 +312,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-//		oled.Clear_Screen();
-//		motion.Motion_Mind();
-//		oled.Refrash_Screen();
-//		HAL_Delay(10);
-		
-		oled.Set_Wheel(TimeRun++%96);
-		oled.Calc_Color();
 		MUSIC_Mode();
-		HAL_GPIO_TogglePin(SYSLED_GPIO_Port, SYSLED_Pin);
+		
 //		HAL_ADC_Start(&hadc1);
 //		HAL_ADC_PollForConversion(&hadc1, 50);
 //		printf("ADC:%X\r\n",HAL_ADC_GetValue(&hadc1));
@@ -337,7 +329,6 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -346,9 +337,8 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE|RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -372,12 +362,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC;
-  PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
 }
 
 /* USER CODE BEGIN 4 */
@@ -397,7 +381,12 @@ void MUSIC_Mode(void)
 			adc_dma_ok = 0;
 			FFT_Pro();	
 			for(i=0;i<200;i++)
-				Device_Msg.fft[i] = lBufMagArray[i]/prt;
+			{
+				if(lBufMagArray[i]/prt>20)
+					Device_Msg.fft[i] = lBufMagArray[i]/prt;
+				else
+					Device_Msg.fft[i] = lBufMagArray[i]/prt/4;
+			}
 			Device_Msg.leftvol=Device_Msg.fft[1];
 			FFT_Start();
 		}
@@ -424,15 +413,18 @@ void MUSIC_Mode(void)
 			case 6:fft.Display_Style6();break;
 			default:fft.Display_Style1();break;
 		}
+		
+		fps++;
+		if(showfpsflag)
+			oled.OLED_SHFAny(0,0,fpschar,19,0xffff);
 		oled.Refrash_Screen();
 	}
-	HAL_Delay(10);
+	HAL_Delay(2);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	static RTC_TimeTypeDef RTC_TimeStruct;
-  static RTC_DateTypeDef RTC_DateStruct;
+	static u16 TimeRun = 0;
 	if (htim->Instance == htim4.Instance)
 	{
 		if(key1_fall_flag==1)//发生按键按下事件
@@ -541,15 +533,20 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	if (htim->Instance == htim5.Instance)
 	{
+		oled.Set_Wheel(TimeRun++%96);
+		oled.Calc_Color();
+		HAL_GPIO_TogglePin(SYSLED_GPIO_Port, SYSLED_Pin);
 		Flag_Refrash = True;
 	}
 	if (htim->Instance == htim9.Instance)
 	{
-		HAL_RTC_GetTime(&RTC_Handler,&RTC_TimeStruct,RTC_FORMAT_BIN);
-		printf("Time:%02d:%02d:%02d\r\n",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds); 
-		HAL_RTC_GetDate(&RTC_Handler,&RTC_DateStruct,RTC_FORMAT_BIN);
-		printf("Date:20%02d-%02d-%02d\r\n",RTC_DateStruct.Year,RTC_DateStruct.Month,RTC_DateStruct.Date); 
-		printf("Week:%d\r\n",RTC_DateStruct.WeekDay); 
+		sprintf(fpschar,"%d",fps);
+		fps = 0;
+//		HAL_RTC_GetTime(&RTC_Handler,&RTC_TimeStruct,RTC_FORMAT_BIN);
+//		printf("Time:%02d:%02d:%02d\r\n",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds); 
+//		HAL_RTC_GetDate(&RTC_Handler,&RTC_DateStruct,RTC_FORMAT_BIN);
+//		printf("Date:20%02d-%02d-%02d\r\n",RTC_DateStruct.Year,RTC_DateStruct.Month,RTC_DateStruct.Date); 
+//		printf("Week:%d\r\n",RTC_DateStruct.WeekDay); 
 	}
 //	if (htim->Instance == htim6.Instance)
 //	{

@@ -17,7 +17,7 @@
 
 //FLASH起始地址
 #define STM32_FLASH_BASE 0x08000000 	//STM32 FLASH的起始地址
-#define FLASH_WAITETIME  50          //FLASH等待超时时间
+#define FLASH_WAITETIME  50000          //FLASH等待超时时间
 
 //FLASH 扇区的起始地址
 #define ADDR_FLASH_SECTOR_0     ((u32)0x08000000) 	//扇区0起始地址, 16 Kbytes  
