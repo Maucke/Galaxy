@@ -9,7 +9,7 @@
 extern "C"  {
 #endif
 
-	
+#define Uart_FFT_Length 200
 uint8_t fall_pot[250]={0};	//记录下落点的坐标
 uint8_t flow_pot[250]={0};
 
@@ -24,7 +24,7 @@ void OLED_FFT::Display_Style1(void)
 	/*******************显示*******************/
 	for(i = 0; i < TrumNum; i++)	
 	{
-		Index = (float)i*180/TrumNum+1;
+		Index = (float)i*Uart_FFT_Length/TrumNum+1;
 		Temp = TrumHeight - (u16)(Device_Msg.fft[Index]/2);
 		if(Temp < 2)
 			Temp = 2;
@@ -63,10 +63,10 @@ void OLED_FFT::Display_Style2(void)
 	int Temp = 0;
 	uint16_t Index;
 	/*******************显示*******************/
-	for(i = 0; i < 102; i++)	
+	for(i = 0; i < SSD1351_WIDTH/3; i++)	
 	{
-		Index = (float)i*180/100+1;
-		Temp = 96 - (float)(Device_Msg.fft[Index]*2/5);
+		Index = (float)i*Uart_FFT_Length/SSD1351_WIDTH*3+1;
+		Temp = SSD1351_HEIGHT*2/3 - (float)(Device_Msg.fft[Index]/3);
 		if(Temp < 2)
 			Temp = 2;
 //		else if(Temp<4) Temp = 4;
@@ -93,17 +93,17 @@ void OLED_FFT::Display_Style2(void)
 		{
 			fall_pot[i] ++;
 		}
-		oled.Draw_Line(3*i,flow_pot[i]+1,3*i,95+1);
-		oled.Draw_Line(3*i+1,flow_pot[i]+1,3*i+1,95+1);
+		oled.Draw_Line(3*i,flow_pot[i]+1,3*i,SSD1351_HEIGHT*2/3);
+		oled.Draw_Line(3*i+1,flow_pot[i]+1,3*i+1,SSD1351_HEIGHT*2/3);
 		
 		oled.Draw_Line(3*i,fall_pot[i]+1+1,3*i,fall_pot[i]+1+1,color_half);
 		oled.Draw_Line(3*i+1,fall_pot[i]+1+1,3*i+1,fall_pot[i]+1+1,color_half);
 		
-		oled.Draw_Line(3*i,(96-flow_pot[i])/3+95,3*i,95,color_half);
-		oled.Draw_Line(3*i+1,(96-flow_pot[i])/3+95,3*i+1,95,color_half);
+		oled.Draw_Line(3*i,(SSD1351_HEIGHT*2/3-flow_pot[i])/3+SSD1351_HEIGHT*2/3-1,3*i,SSD1351_HEIGHT*2/3-1,color_half);
+		oled.Draw_Line(3*i+1,(SSD1351_HEIGHT*2/3-flow_pot[i])/3+SSD1351_HEIGHT*2/3-1,3*i+1,SSD1351_HEIGHT*2/3-1,color_half);
 		
 	}
-	oled.Draw_Line(0,95,128,95,color_min);
+	oled.Draw_Line(0,SSD1351_HEIGHT*2/3-1,SSD1351_WIDTH,SSD1351_HEIGHT*2/3-1,color_min);
 }
 
 
@@ -115,9 +115,9 @@ void OLED_FFT::Display_Style3(void)
 	uint16_t Index;
 	static u8 BackFlag[100]={0};
 	/*******************显示*******************/
-	for(i = 0; i < 76; i++)	
+	for(i = 0; i < SSD1351_WIDTH/4; i++)	
 	{
-		Index = (float)i*180/TrumNum+1;
+		Index = (float)i*Uart_FFT_Length/SSD1351_WIDTH*4+1;
 		Temp = TrumHeight - (u16)(Device_Msg.fft[Index]/2);
 		if(Temp < 4)
 			Temp = 4;
@@ -179,9 +179,9 @@ void OLED_FFT::Display_Style4(void)
 	int Temp = 0;
 	uint16_t Index;
 	/*******************显示*******************/
-	for(i = 0; i < 43; i++)	
+	for(i = 0; i < SSD1351_WIDTH/3; i++)	
 	{
-		Index = (float)i*180/100+1;
+		Index = (float)i*Uart_FFT_Length/SSD1351_WIDTH*3+1;
 		Temp = TrumHeight - (u16)(Device_Msg.fft[Index]/2);
 		if(Temp < 2)
 			Temp = 2;
@@ -202,7 +202,7 @@ void OLED_FFT::Display_Style4(void)
 		SampPoint[0][i*2+1] = flow_pot[i];
 		oled.Draw_Line(3*i,flow_pot[i],3*i,TrumHeight-1,color_half);
 	}
-	oled.Draw_LineS(SampPoint[0],43);
+	oled.Draw_LineS(SampPoint[0],SSD1351_WIDTH/3);
 }
 
 void OLED_FFT::Display_Style5(void)
@@ -212,9 +212,9 @@ void OLED_FFT::Display_Style5(void)
 	int Temp = 0;
 	uint16_t Index;
 	/*******************显示*******************/
-	for(i = 0; i < 102; i++)	
+	for(i = 0; i < SSD1351_WIDTH/3; i++)	
 	{
-		Index = (float)i*180/100+1;
+		Index = (float)i*Uart_FFT_Length/SSD1351_WIDTH*3+1;
 		Temp = 48 - (u16)(Device_Msg.fft[Index]/4);
 		if(Temp < 2)
 			Temp = 2;
@@ -234,13 +234,13 @@ void OLED_FFT::Display_Style5(void)
 		SampPoint[0][i*2] = 3*i;
 		SampPoint[0][i*2+1] = flow_pot[i];
 		SampPoint[1][i*2] = 3*i;
-		SampPoint[1][i*2+1] = - flow_pot[i] + 97;
+		SampPoint[1][i*2+1] = - flow_pot[i] + SSD1351_HEIGHT+1;
 		
 		oled.Draw_Line(3*i,SampPoint[0][i*2+1],3*i,SampPoint[1][i*2+1]-1,color_half);
 		
 	}
-	oled.Draw_LineS(SampPoint[0],102);
-	oled.Draw_LineS(SampPoint[1],102);
+	oled.Draw_LineS(SampPoint[0],SSD1351_WIDTH/3);
+	oled.Draw_LineS(SampPoint[1],SSD1351_WIDTH/3);
 }
 
 int abs2(int num)
@@ -264,7 +264,7 @@ void OLED_FFT::Display_Style6(void)
 	static int runCount2 = 0;
 	/*******************显示*******************/
 	if(Device_Msg.leftvol)
-		Rn = 40+Device_Msg.leftvol/(20);
+		Rn = 40+Device_Msg.leftvol/(20*256);
 	else
 		Rn = 5;
 	
@@ -326,15 +326,25 @@ void OLED_FFT::Display_Style6(void)
 		SampPoint[1][i*2] = OCX+((Rr-flow_pot[i]+Rr/2)*cos(i*6*PI/180));
 		SampPoint[1][i*2+1] = OCY+((Rr-flow_pot[i]+Rr/2)*sin(i*6*PI/180));
 		
-		
-		
-		oled.Draw_Line(SampPoint[0][i*2],SampPoint[0][i*2+1],SampPoint[1][i*2],SampPoint[1][i*2+1],color_half);
+		oled.Draw_Line(SampPoint[0][i*2],SampPoint[0][i*2+1],SampPoint[1][i*2],SampPoint[1][i*2+1],0xffff);
 		
 	}
-	oled.Draw_Line(SampPoint[0][0*2],SampPoint[0][0*2+1],SampPoint[0][59*2],SampPoint[0][59*2+1]);
+	for(i = 0; i < 60; i++)	
+	{
+		SampPoint[1][i*2] = OCX+((Rr+3-flow_pot[i]+Rr/2)*cos(i*6*PI/180));
+		SampPoint[1][i*2+1] = OCY+((Rr+3-flow_pot[i]+Rr/2)*sin(i*6*PI/180));
+	}
 	oled.Draw_Line(SampPoint[1][0*2],SampPoint[1][0*2+1],SampPoint[1][59*2],SampPoint[1][59*2+1]);
-	oled.Draw_LineS(SampPoint[0],60);
 	oled.Draw_LineS(SampPoint[1],60);
+	
+	for(i = 0; i < 60; i++)	
+	{
+		SampPoint[1][i*2] = OCX+((Rr+5-flow_pot[i]+Rr/2)*cos(i*6*PI/180));
+		SampPoint[1][i*2+1] = OCY+((Rr+5-flow_pot[i]+Rr/2)*sin(i*6*PI/180));
+	}
+	oled.Draw_Line(SampPoint[1][0*2],SampPoint[1][0*2+1],SampPoint[1][59*2],SampPoint[1][59*2+1],color_half);
+	oled.Draw_LineS(SampPoint[1],60,color_half);
+	
 	runCount++;
 	if(runCount>=20)
 		runCount = 0;
@@ -350,14 +360,15 @@ void OLED_FFT::Display_Style6(void)
 	oled.Draw_Line(OCX+(Temp*cos((runCount1+0)*6*PI/180)),OCY+(Temp*sin((runCount1+0)*6*PI/180)),OCX+(Temp*cos((runCount1+5)*6*PI/180)),OCY+(Temp*sin((runCount1+5)*6*PI/180)),color_half);
 	oled.Draw_Line(OCX+(Temp*cos((runCount1+20)*6*PI/180)),OCY+(Temp*sin((runCount1+20)*6*PI/180)),OCX+(Temp*cos((runCount1+25)*6*PI/180)),OCY+(Temp*sin((runCount1+25)*6*PI/180)),color_half);
 	oled.Draw_Line(OCX+(Temp*cos((runCount1+40)*6*PI/180)),OCY+(Temp*sin((runCount1+40)*6*PI/180)),OCX+(Temp*cos((runCount1+45)*6*PI/180)),OCY+(Temp*sin((runCount1+45)*6*PI/180)),color_half);
-	
 	Temp = 40+MaxType-20-2;
 //	oled.Fill_Circle(OCX,OCY,40+MaxType-20-4);
 	oled.Draw_Triangle(OCX+(Temp*cos(runCount*6*PI/180)),OCY+(Temp*sin(runCount*6*PI/180)),OCX+(Temp*cos((runCount+20)*6*PI/180)),OCY+(Temp*sin((runCount+20)*6*PI/180)),OCX+(Temp*cos((runCount+40)*6*PI/180)),OCY+(Temp*sin((runCount+40)*6*PI/180)),color_half);
 	Temp-=4;
-	oled.Draw_Triangle(OCX+(Temp*cos(runCount*6*PI/180)),OCY+(Temp*sin(runCount*6*PI/180)),OCX+(Temp*cos((runCount+20)*6*PI/180)),OCY+(Temp*sin((runCount+20)*6*PI/180)),OCX+(Temp*cos((runCount+40)*6*PI/180)),OCY+(Temp*sin((runCount+40)*6*PI/180)),0xffff);
+	oled.Draw_Triangle(OCX+(Temp*cos(runCount*6*PI/180)),OCY+(Temp*sin(runCount*6*PI/180)),OCX+(Temp*cos((runCount+20)*6*PI/180)),OCY+(Temp*sin((runCount+20)*6*PI/180)),OCX+(Temp*cos((runCount+40)*6*PI/180)),OCY+(Temp*sin((runCount+40)*6*PI/180)),color_min);
 //HAL_Delay(100);
 }
+
+
 
 
 #ifdef __cplusplus

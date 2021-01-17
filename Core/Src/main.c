@@ -111,7 +111,7 @@ void GetPowerMag(void)
 				//除以32768再乘65536是为了符合浮点数计算规律
         X = NPT * ((float)lX) / 32768;
         Y = NPT * ((float)lY) / 32768;
-        Mag = sqrt(X * X + Y * Y)*1.0/ NPT;
+        Mag = sqrt(X * X + Y * Y)*1.0f/ NPT;
         if(i == 0)	
             lBufMagArray[i] = (unsigned long)(Mag * 32768);
         else
@@ -366,6 +366,8 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+//RTC_TimeTypeDef timenow = {0};
+//RTC_DateTypeDef datenow = {0};
 uint8_t prt = 1;		
 void MUSIC_Mode(void)
 {
@@ -535,18 +537,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 		oled.Set_Wheel(TimeRun++%96);
 		oled.Calc_Color();
-		HAL_GPIO_TogglePin(SYSLED_GPIO_Port, SYSLED_Pin);
+//		HAL_GPIO_TogglePin(SYSLED_GPIO_Port, SYSLED_Pin);
 		Flag_Refrash = True;
 	}
 	if (htim->Instance == htim9.Instance)
 	{
 		sprintf(fpschar,"%d",fps);
 		fps = 0;
-//		HAL_RTC_GetTime(&RTC_Handler,&RTC_TimeStruct,RTC_FORMAT_BIN);
-//		printf("Time:%02d:%02d:%02d\r\n",RTC_TimeStruct.Hours,RTC_TimeStruct.Minutes,RTC_TimeStruct.Seconds); 
-//		HAL_RTC_GetDate(&RTC_Handler,&RTC_DateStruct,RTC_FORMAT_BIN);
-//		printf("Date:20%02d-%02d-%02d\r\n",RTC_DateStruct.Year,RTC_DateStruct.Month,RTC_DateStruct.Date); 
-//		printf("Week:%d\r\n",RTC_DateStruct.WeekDay); 
+//		HAL_RTC_GetTime(&hrtc,&timenow,RTC_FORMAT_BIN);
+//		printf("Time:%02d:%02d:%02d\r\n",timenow.Hours,timenow.Minutes,timenow.Seconds); 
+//		HAL_RTC_GetDate(&hrtc,&datenow,RTC_FORMAT_BIN);
+//		printf("Date:20%02d-%02d-%02d\r\n",datenow.Year,datenow.Month,datenow.Date); 
+//		printf("Week:%d\r\n",datenow.WeekDay); 
 	}
 //	if (htim->Instance == htim6.Instance)
 //	{
